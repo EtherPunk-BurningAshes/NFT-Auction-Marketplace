@@ -26,7 +26,7 @@ class NavbarPage extends Component {
   componentDidUpdate(){
     let util = new Util();
     if(!this.state.accounts && this.props.baseAppState){
-      this.setState({accounts: this.props.baseAppState.accounts});      
+      // this.setState({accounts: this.props.baseAppState.accounts});      
     }else{
       if(!this.state.maskedAccount && this.state.accounts){
         this.setState({maskedAccount: util.GetMaskedAccount(this.state.accounts)});

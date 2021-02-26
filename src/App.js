@@ -12,6 +12,7 @@ import NotFound from './pages/NotFound';
 import { Component } from 'react';
 import getWeb3 from "./getWeb3";
 import ArtAuction from "./abis/ArtAuction.json";
+const PriceConsumerV3 = require('./abis/PriceConsumerV3.json');
 
 class App extends Component {
 
@@ -39,11 +40,18 @@ class App extends Component {
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
-      const myContractAddress = '0x2446CA20c8887cD37Ae2dA2B1F540b1d6e25B2cd';
+      const myContractAddress = '0xc0308488eCbecC7630bDb871D589bED9a7122268';
+
+      const priceFeedContractAddr = '0xba3201dFAAc91620A6fDB8A13cc7e68368EC4160';
 
       // Get the contract instance.
       const instance = new web3.eth.Contract(ArtAuction.abi,
         myContractAddress);
+        console.log('instance', instance);
+
+      const priceFeedInstance = new web3.eth.Contract(PriceConsumerV3.abi,
+        priceFeedContractAddr);
+        console.log('priceFeedInstance', priceFeedInstance);
 
       //for local development
       // const networkId = await web3.eth.net.getId();
@@ -58,7 +66,7 @@ class App extends Component {
       // example of interacting with the contract's methods.
     //   localStorage.setItem('contract',JSON.stringify(instance));
       localStorage.setItem('accounts',accounts);
-      this.setState({web3: web3, accounts: accounts, contract: instance });
+      this.setState({web3: web3, accounts: accounts, contract: instance, priceFeed: priceFeedInstance });
     }
     catch (error) {
       // Catch any errors for any of the above operations.

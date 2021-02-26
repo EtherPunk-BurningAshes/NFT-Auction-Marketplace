@@ -40,17 +40,20 @@ class MarketPlaceSell extends Component {
             },
             error: {
                 uploadFile: '',
-                auctionedItems: ''
+                auctionedItems: '',
+                cancelAuction: ''
             },
             success: {
                 uploadFile: '',
-                auctionedItems: ''
+                auctionedItems: '',
+                cancelAuction: ''
             }
         };
         
         this.getFileBuffer = this.getFileBuffer.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.openArt = this.openArt.bind(this);
+        this.cancelAuction = this.cancelAuction.bind(this);
         this.fetchMyArtItems();
     }
 
@@ -132,10 +135,7 @@ class MarketPlaceSell extends Component {
         }, (error, events) => {       
             if (!error){
                 console.log('events', events);                
-                // var obj = JSON.parse(JSON.stringify(events));
-                // var array = Object.keys(obj)
-        
-                // console.log("returned values",obj[array[0]].returnValues);
+                
                 let oldMyAuctionedItems = [];
                 events.forEach(event => {
                     let itemId = event.returnValues[0];
@@ -144,8 +144,20 @@ class MarketPlaceSell extends Component {
                     let price = event.returnValues[3];
                     let created = event.returnValues[4];
                     let expiry = event.returnValues[5];
-                    
-                    oldMyAuctionedItems.push({itemId: itemId, name: name, owner: seller, price: price, created: created, expiry: expiry});
+
+                    // check auction status
+                    let response = this.getArtItem(itemId);
+                    response.then(result =>{
+                        console.log('get art ',result);
+                        if(result){
+                            let isCancelled = result[6];                            
+                            if(!isCancelled){
+                                oldMyAuctionedItems.push({itemId: itemId, name: name, owner: seller, price: price, created: created, expiry: expiry});
+                            }
+                        }
+                    }).catch(error=>{
+                        console.log('get art item for fetchMyArtItems error', error);
+                    });
                     
                 });
                 this.setState({myAuctionedItems: oldMyAuctionedItems});
@@ -468,6 +480,50 @@ class MarketPlaceSell extends Component {
                         
     }
 
+    cancelAuction =(itemId)=>{
+        let contract = this.state.contract;
+        if(typeof contract === 'string' && typeof contract !== 'object' && typeof contract !== null){
+            contract = JSON.parse(contract);
+        }
+        console.log('cancel aution contract', contract);
+        const account = this.state.accounts[0];
+        console.log('cancel aution account', account);
+
+        let response = contract.methods.cancelAuction(itemId).send({from: account});
+        
+        response.then(result => {
+            console.log('cancel aution: ', result);
+            if(result.status && result.events.LogCanceled){
+                this.setState(prevState => ({
+                    success: {
+                        ...prevState.success,
+                        cancelAuction: 'Success — Auction was successfully canceled!'
+                }}));
+
+                //remove from UI
+                let itemIndex = this.state.myAuctionedItems.findIndex(item => item.itemId === itemId);
+                if(itemIndex > -1){
+                    let myAuctions = this.state.myAuctionedItems;
+                    myAuctions.splice(itemIndex, 1);
+                    this.setState({myAuctionedItems: myAuctions});
+                }
+
+            }else{
+                this.setState(prevState => ({
+                    error: {
+                        ...prevState.error,
+                        cancelAuction: 'Error — A minor error occured. Take a look at the log'
+                }})); 
+            }
+        }).catch(error=>{
+            console.log('cancel aution error: ', error);
+            this.setState(prevState => ({
+                error: {
+                    ...prevState.error,
+                    cancelAuction: error.message
+            }})); 
+        });
+    }
 
     render() {
         let util = new HelperFunctions();
@@ -510,6 +566,12 @@ class MarketPlaceSell extends Component {
                                 {this.state.success.uploadFile ? 
                                 <ArtAlert onCloseCallback={this.resetMessage} type="success" message={this.state.success.uploadFile} />                                        
                                 :null}      
+                                {this.state.error.cancelAuction ? 
+                                    <ArtAlert onCloseCallback={this.resetMessage} type="danger" message={this.state.error.cancelAuction} />                                        
+                                :null}
+                                {this.state.success.cancelAuction ? 
+                                <ArtAlert onCloseCallback={this.resetMessage} type="success" message={this.state.success.cancelAuction} />                                        
+                                :null}  
                                 <MDBCol md={6}>
                                     <label htmlFor="name" className="grey-text mt-2">
                                         Name
@@ -552,7 +614,13 @@ class MarketPlaceSell extends Component {
                             {this.state.myAuctionedItems.length > 0 ?
                                 this.state.myAuctionedItems.map((item, index) => {
                                     return (<span onClick={this.openArt(item.itemId, item.ipfsHash, item.name)}>
-                                    <ArtListItem key={index} artTitle={item.name} currentHighestBid={item.price} timeLeft={timeAgo.format(util.GetDateFromUNIXTime(Number(item.created) + Number(item.expiry)), 'twitter')} />
+                                    <ArtListItem
+                                        key={index}
+                                        artTitle={item.name} 
+                                        currentHighestBid={item.price} 
+                                        timeLeft={timeAgo.format(util.GetDateFromUNIXTime(Number(item.created) + Number(item.expiry)), 'twitter')} 
+                                        onCancelCallback={this.cancelAuction(item.itemId)}                                        
+                                    />
                                     </span>);
                                 })
                             : <h6>You currently have no auctioned items</h6>}

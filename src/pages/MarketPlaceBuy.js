@@ -26,7 +26,8 @@ class MarketPlaceBuy extends Component {
             loading: {
                 expiringItems: false,
                 items: false,
-                placeBidBtn: false
+                placeBidBtn: false,
+                withdrawBtn: false
             },
             columns: [
                 {
@@ -67,10 +68,12 @@ class MarketPlaceBuy extends Component {
                 }
             ],            
             error: {
-                placeBid: ''                
+                placeBid: '',
+                withdrawFunds: ''                
             },
             success: {
-                placeBid: ''
+                placeBid: '',
+                withdrawFunds: ''
             }
         };
         
@@ -132,12 +135,12 @@ class MarketPlaceBuy extends Component {
         event.stopPropagation();
     }
 
-    reBid = (itemId, name, price, currentHighestBidder) =>{
+    reBid = (itemId, name, price, currentHighestBidder, isCancelled) =>{
         this.setState({showNewBid: true});
         this.setState({bidItemId: itemId});        
         console.log('itemID clicked', itemId);
 
-        let newBidObj = {name: name, itemId: itemId, currentHighestBid: price, currentHighestBidder: currentHighestBidder};
+        let newBidObj = {name: name, itemId: itemId, currentHighestBid: price, currentHighestBidder: currentHighestBidder, isCancelled: isCancelled};
         this.setState({newBid: newBidObj});
     }
 
@@ -151,10 +154,12 @@ class MarketPlaceBuy extends Component {
         let name = bidItem.name;
         let currentHighestBid = bidItem.currentHighestBid;
         let currentHighestBidder = bidItem.currentHighestBidder;
+        let isCancelled = bidItem.isCancelled;
         console.log('item selected name', name);
         console.log('item selected id', itemId);
         console.log('item selected price',currentHighestBid);
-        this.reBid(itemId, name, currentHighestBid, currentHighestBidder);
+        console.log('item selected isCanclled',currentHighestBid);
+        this.reBid(itemId, name, currentHighestBid, currentHighestBidder, isCancelled);
         event.stopPropagation();
     }
 
@@ -206,8 +211,16 @@ class MarketPlaceBuy extends Component {
                         if(result){
                             name = result[7];
                             expiry = result[5];
+                            let isCancelled = result[6];   
                             console.log('art item fetched');
-                            myBids.push({itemId: itemId, name: name, currentHighestBid: currentHighestBid, currentHighestBidder: currentHighestBidder, expiry: expiry});
+                            myBids.push({
+                                itemId: itemId, 
+                                name: name,
+                                currentHighestBid: currentHighestBid, 
+                                currentHighestBidder: currentHighestBidder, 
+                                expiry: expiry,
+                                isCancelled: isCancelled
+                            });
                         }
 
                         this.setState({myBids: myBids});
@@ -351,7 +364,7 @@ class MarketPlaceBuy extends Component {
                     if(new Date() - util.GetDateFromUNIXTime(Number(created) + Number(expiry)) >= 0){
                         isExpired = true;
                     }
-                    
+
                     //check for existing bids on item, and update price with current highest bid on the item
                     //address indexed bidder, uint indexed artItemId, uint bid, address indexed highestBidder, uint highestBid, uint highestBindingBid);  
                     contract.getPastEvents('LogBid', {
@@ -371,23 +384,44 @@ class MarketPlaceBuy extends Component {
                                 }
                             }
 
-                            oldArtItems.push({
-                                itemId: itemId, 
-                                name: name, 
-                                owner: util.GetMaskedAccount(seller), 
-                                price: price, 
-                                created: createdDate, 
-                                expiry: expiryDate,
-                                join: <section>{ isExpired ? <MDBBtn className="disabled" color="danger" size="sm">EXPIRED</MDBBtn> 
-                                    : <MDBBtn color="success" size="sm" onClick={this.newBid(itemId, name, price, seller)}>JOIN</MDBBtn>}</section>
-                            });
-                            
-                            count--;                    
-                            if(count < 1) {
-                                this.setState({latestFetchBlock: event.blockNumber});
-                                // break; limit fetched items
-                            }
-                            this.setState({latestFetchBlock: event.blockNumber});
+                            //check if auction is closed already                            
+                            let response = this.getArtItem(itemId);
+                            response.then(result =>{
+                                console.log('get art ',result);
+                                if(result){
+                                    let isCancelled = result[6];   
+
+                                    let specialStatus = null; 
+                                    if(isCancelled){
+                                        specialStatus = <MDBBtn className="disabled" color="warning" size="sm">CANCELLED</MDBBtn>;
+                                    }else if(isExpired){
+                                        specialStatus = <MDBBtn className="disabled" color="danger" size="sm">EXPIRED</MDBBtn>;
+                                    }
+                                    
+                                    //excluse canceled autions
+                                    // if(!isCancelled){
+                                        oldArtItems.push({
+                                            itemId: itemId, 
+                                            name: name, 
+                                            owner: util.GetMaskedAccount(seller), 
+                                            price: price, 
+                                            created: createdDate, 
+                                            expiry: expiryDate,
+                                            join: <section>{ specialStatus ?  specialStatus
+                                                : <MDBBtn color="success" size="sm" onClick={this.newBid(itemId, name, price, seller)}>JOIN</MDBBtn>}</section>
+                                        });
+                                        
+                                        count--;                    
+                                        if(count < 1) {
+                                            this.setState({latestFetchBlock: event.blockNumber});
+                                            // break; limit fetched items
+                                        }
+                                        this.setState({latestFetchBlock: event.blockNumber});
+                                    // }
+                                }
+                            }).catch(error=>{
+                                console.log('get art item for fetchMyArtItems error', error);
+                            });                            
                         }
                     });
                 }
@@ -398,10 +432,42 @@ class MarketPlaceBuy extends Component {
                 console.log(error)
             }
         })
+    }
 
-        // for(var i=0; i < count; i++){
-        //     let response = contract.methods.getArtItem(artItemId).call({from: account});
-        // }
+    withdrawFunds =(itemId)=>event=>{
+        event.preventDefault();
+        const contract = this.state.contract;
+        const account = this.state.accounts[0];
+
+        let response = contract.methods.withdraw(itemId).send({from: account});
+        
+        response.then(result => {
+            console.log('withdraw bid: ', result);
+            if(result.status && result.events.LogWithdrawal){
+                let amount = event[0].returnValues[2];
+                this.setState(prevState => ({
+                    success: {
+                        ...prevState.success,
+                        withdrawFunds: `Success — All your staked funds (${amount}) have been withdrawn!`
+                }}));
+                this.fetchArtItems();
+                this.fetchMyBids();
+            }else{
+                console.log('withdraw call error occured')
+                this.setState(prevState => ({
+                    error: {
+                        ...prevState.error,
+                        withdrawFunds: 'Error — You do not have any funds staked for this art item.'
+                }})); 
+            }
+        }).catch(error=>{
+            console.log('withdraw error: ', error);
+            this.setState(prevState => ({
+                error: {
+                    ...prevState.error,
+                    withdrawFunds: error.message
+            }})); 
+        }); 
     }
 
     render() {
@@ -444,6 +510,12 @@ class MarketPlaceBuy extends Component {
                         {this.state.showNewBid && this.state.newBid ?
                             <section className="mt-3">                                
                                 <MDBCard className="p-4">
+                                    {this.state.error.withdrawFunds ? 
+                                        <ArtAlert onCloseCallback={this.resetMessage} type="danger" message={this.state.error.withdrawFunds} />                                        
+                                    :null}
+                                    {this.state.success.withdrawFunds ? 
+                                        <ArtAlert onCloseCallback={this.resetMessage} type="success" message={this.state.success.withdrawFunds} />                                        
+                                    :null}   
                                     {this.state.error.placeBid ? 
                                         <ArtAlert onCloseCallback={this.resetMessage} type="danger" message={this.state.error.placeBid} />                                        
                                     :null}
@@ -459,22 +531,33 @@ class MarketPlaceBuy extends Component {
                                     </label>                                    
                                     <input type="text" disabled value={util.GetMaskedAccount(this.state.newBid.currentHighestBidder) ? util.GetMaskedAccount(this.state.newBid.currentHighestBidder) : '-- Not Available --'} id="highestBidder" name="artName" className="form-control" />
                                     <label htmlFor="currentHighestBid" className="grey-text mt-2 small text-uppercase">
-                                        Highest Bid (Current)
-                                    </label>
-                                    {/* ${this.state.newBid.currentHighestBidder ? ' - '+ util.GetMaskedAccount(this.state.newBid.currentHighestBidder): null}`} */}
-                                    <input type="number" disabled value={this.state.newBid.currentHighestBid}  
-                                            id="currentHighestBid" 
-                                            name="currentHighestBid" className="form-control" />
-                                    <label htmlFor="bidAmount" className="grey-text mt-2 small text-uppercase">
-                                        Bid Amount
-                                    </label>
-                                    <input type="number" min={0} value={this.state.bidAmount} onChange={this.handleChange} id="bidAmount" name="bidAmount" className="form-control" />
+                                            Highest Bid (Current)
+                                        </label>                                    
+                                        <input type="number" disabled value={this.state.newBid.currentHighestBid}  
+                                                id="currentHighestBid" 
+                                                name="currentHighestBid" className="form-control" />
+
+                                    {this.state.newBid.isCancelled ? 
+                                    <>
+                                        <label htmlFor="bidAmount" className="grey-text mt-2 small text-uppercase">
+                                            Bid Amount
+                                        </label>
+                                        <input type="number" min={0} value={this.state.bidAmount} onChange={this.handleChange} id="bidAmount" name="bidAmount" className="form-control" />
+                                        
+                                        <MDBRow>
+                                            <MDBContainer className="mt-2">
+                                                <MDBBtn onClick={this.placeBid} block color="info" >{this.state.loading.placeBidBtn ? <Spinner size="small"/> : <span>Place Bid</span> }</MDBBtn>
+                                            </MDBContainer>
+                                        </MDBRow>
+                                    </>
+                                    : 
+                                        <MDBRow>
+                                            <MDBContainer className="mt-2">
+                                                <MDBBtn onClick={this.withdrawFunds(this.state.newBid.itemId)} block color="info" >{this.state.loading.withdrawBtn ? <Spinner size="small"/> : <span>Withdraw</span> }</MDBBtn>
+                                            </MDBContainer>
+                                        </MDBRow>
+                                    }
                                     
-                                    <MDBRow>
-                                        <MDBContainer className="mt-2">
-                                            <MDBBtn onClick={this.placeBid} block color="info" >{this.state.loading.placeBidBtn ? <Spinner size="small"/> : <span>Place Bid</span> }</MDBBtn>
-                                        </MDBContainer>
-                                    </MDBRow>
                                 </MDBCard>
                             </section>                            
                         :null}

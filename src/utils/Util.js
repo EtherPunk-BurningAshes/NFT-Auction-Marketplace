@@ -1,34 +1,39 @@
 import getWeb3 from '../getWeb3';
 import ArtAuction from "../abis/ArtAuction.json";
+import PriceConsumerV3 from '../abis/PriceConsumerV3.json';
 
 export default class HelperFunctions {
     reloadContractAndAccounts=async ()=>{
         try{
           // Get network provider and web3 instance.
-          const web3 = await getWeb3();
-    
-          // Use web3 to get the user's accounts.
-          const accounts = await web3.eth.getAccounts();
-          const myContractAddress = '0x2446CA20c8887cD37Ae2dA2B1F540b1d6e25B2cd';
-    
-          // Get the contract instance.
-          const instance = new web3.eth.Contract(ArtAuction.abi,
-            myContractAddress);
-    
-          //for local development
-          // const networkId = await web3.eth.net.getId();
-          // const deployedNetwork = ArtAuction.networks[networkId];
-          // const instance = new web3.eth.Contract(
-          //   ArtAuction.abi,
-          //   deployedNetwork && deployedNetwork.address,
-          // );
-    
-    
-          // Set web3, accounts, and contract to the state, and then proceed with an
-          // example of interacting with the contract's methods.
-        //   localStorage.setItem('contract',JSON.stringify(instance));
+      const web3 = await getWeb3();
+
+      // Use web3 to get the user's accounts.
+      const accounts = await web3.eth.getAccounts();
+      const myContractAddress = '0xc0308488eCbecC7630bDb871D589bED9a7122268';
+
+      const priceFeedContractAddr = '0xba3201dFAAc91620A6fDB8A13cc7e68368EC4160';
+
+      // Get the contract instance.
+      const instance = new web3.eth.Contract(ArtAuction.abi,
+        myContractAddress);
+
+      const priceFeedInstance = new web3.eth.Contract(PriceConsumerV3.abi,
+        priceFeedContractAddr);
+
+      //for local development
+      // const networkId = await web3.eth.net.getId();
+      // const deployedNetwork = ArtAuction.networks[networkId];
+      // const instance = new web3.eth.Contract(
+      //   ArtAuction.abi,
+      //   deployedNetwork && deployedNetwork.address,
+      // );
+
+
+      // Set web3, accounts, and contract to the state, and then proceed with an
+      // example of interacting with the contract's methods.    
           localStorage.setItem('accounts',accounts);
-          let  response = { web3: web3, accounts: accounts, contract: instance };
+          let  response = { web3: web3, accounts: accounts, contract: instance, priceFeed: priceFeedInstance };
           return response;
           
         }

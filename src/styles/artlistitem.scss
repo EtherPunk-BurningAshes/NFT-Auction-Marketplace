@@ -4,3 +4,15 @@
     cursor: pointer;
     font-size: 11px !important;
 }
+
+.cancel-auction-btn{
+    background-color: rgb(224, 14, 14);
+    color: white;
+    cursor: pointer;
+    transition:  ease-in .25s;
+}
+
+.cancel-auction-btn:hover{
+    background-color: rgb(201, 0, 0);
+    transition:  ease-in .25s;
+}
