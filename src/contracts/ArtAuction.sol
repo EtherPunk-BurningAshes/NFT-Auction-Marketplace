@@ -1,7 +1,8 @@
 pragma solidity ^0.6.3;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/8108f2f9b917616a8cd0661c31a211ad9f988110/contracts/token/ERC721/ERC721.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/8108f2f9b917616a8cd0661c31a211ad9f988110/contracts/math/SafeMath.sol";
+
 contract ArtAuction is ERC721 {
    
   using SafeMath for uint256;  //For Future use
@@ -26,7 +27,7 @@ contract ArtAuction is ERC721 {
    //Events
     event LogBid(address indexed bidder, uint indexed artItemId, uint bid, address indexed highestBidder, uint highestBid, uint highestBindingBid);  
     event LogWithdrawal(address indexed withdrawer, address indexed withdrawalAccount, uint amount);
-    event LogCanceled();
+    event LogCanceled(uint256 indexed artItemId,address indexed seller,address indexed winner);
     event LogAddItem(uint256 _artItemIds, string name, address payable indexed seller, uint256 price, uint nowTime, uint timePeriod);
 
   //Art Item
@@ -122,12 +123,13 @@ contract ArtAuction is ERC721 {
    
     ArtItem storage artItem = _artItems[id];  
     require(artItem.cancelled==false);
+   
     if((artItem.time + (artItem.timePeriod * 1 seconds) < now))  //mint token if auctionstarted
     {
     bidding storage bid = bid[id];
     _tokenIds++;
     //token[_tokenIds] = _artItemIds;
-    _safeMint(msg.sender, _tokenIds);
+    _safeMint(bid.highestBidder, _tokenIds);
     _setTokenURI(_tokenIds, artItem.tokenURI);
     artItem.cancelled=true;
      // the auction's owner should be allowed to withdraw the highestBindingBid
@@ -136,10 +138,11 @@ contract ArtAuction is ERC721 {
     fundsByBidder[id][bid.highestBidder] -= bid.highestBindingBid;
     // send the funds
     if (!msg.sender.send(bid.highestBindingBid)) revert();
+    LogCanceled(id,msg.sender,bid.highestBidder);
         }
        
    
-    LogCanceled();
+    
     return artItem.cancelled;    
    }
    
@@ -150,7 +153,7 @@ contract ArtAuction is ERC721 {
    
     returns (bool success)
 {  
-
+    
     // reject payments of 0 ETH
     if (msg.value == 0) revert();
    
@@ -158,7 +161,7 @@ contract ArtAuction is ERC721 {
     // plus whatever has been sent with this transaction
     bidding storage bid = bid[id];
     ArtItem storage artItem = _artItems[id];  
-   
+    require((artItem.time + (artItem.timePeriod * 1 seconds) > now));
     require(artItem.cancelled==false);
  
     uint newBid = fundsByBidder[id][msg.sender] + msg.value;
@@ -255,4 +258,3 @@ contract ArtAuction is ERC721 {
 }
        
 }
-
