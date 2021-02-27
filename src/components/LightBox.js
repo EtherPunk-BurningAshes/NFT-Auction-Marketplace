@@ -58,7 +58,7 @@ class LightBox extends Component {
                 {this.state.groupFilesSources.length > 0 ? 
                     <FsLightbox
                         toggler={this.state.toggler}            
-                        onClose={console.log("unmounted available"), () => this.closeLightBox()}
+                        onClose={ () => this.closeLightBox()}
                         sources={this.state.groupFilesSources}
                         key={this.state.key}
                         openOnMount={this.state.shouldOpenOnMount}
@@ -66,7 +66,7 @@ class LightBox extends Component {
                     />:
                     <FsLightbox
                         toggler={this.state.toggler}            
-                        onClose={console.log("unmounted not available"), () => this.closeLightBox()}
+                        onClose={ () => this.closeLightBox()}
                         sources={[
                             <div style={{width:'100%'}}>
                                 <h3>Art file is not available!</h3>

@@ -22,6 +22,7 @@ class MarketPlaceSell extends Component {
         this.state = {
             accounts: this.props.baseAppState.accounts,
             contract: this.props.baseAppState.contract,
+            priceContract: this.props.baseAppState.priceFeed,
             file: null,
             buffer: null,
             price: 0,
@@ -36,7 +37,8 @@ class MarketPlaceSell extends Component {
             showFileLightBox: false,
             loading: {
                 uploadFile: false,
-                addItemBtn: false
+                addItemBtn: false,
+                fetchMyArtItems: false
             },
             error: {
                 uploadFile: '',
@@ -49,12 +51,12 @@ class MarketPlaceSell extends Component {
                 cancelAuction: ''
             }
         };
-        
+        this.fetchMyArtItems();
         this.getFileBuffer = this.getFileBuffer.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.openArt = this.openArt.bind(this);
-        this.cancelAuction = this.cancelAuction.bind(this);
-        this.fetchMyArtItems();
+        this.cancelAuction = this.cancelAuction.bind(this);       
+        this.onFetchMyArtItems = this.onFetchMyArtItems.bind(this);
     }
 
     componentDidMount(){
@@ -64,7 +66,7 @@ class MarketPlaceSell extends Component {
         // if(!this.state.contract){
         //     this.setState({contract: localStorage.getItem('contract')});
         // }
-        // this.fetchMyArtItems();
+        
     }
 
     componentWillMount= async ()=>{
@@ -72,7 +74,7 @@ class MarketPlaceSell extends Component {
         if ( !contract ) {
             let util = new HelperFunctions();
             let response = await util.reloadContractAndAccounts();
-            this.setState({ web3: response.web3, accounts: response.accounts, contract: response.contract });
+            this.setState({ web3: response.web3, accounts: response.accounts, contract: response.contract, priceContract: response.priceFeed });
         }
     }
 
@@ -80,11 +82,14 @@ class MarketPlaceSell extends Component {
         // if(!this.state.accounts){
         //     this.setState({accounts: this.props.baseAppState.accounts});
         // }
-        // if(!this.state.contract){
-        //     this.setState({contract: this.props.baseAppState.contract});
-        // }
+        setInterval(()=>{
+            if(!this.state.contract){
+                window.location.href='/marketplace/sell';
+            }
+        }, 5000); 
+        
         // 
-        console.log('contract', this.props.baseAppState.contract);
+        // console.log('contract', this.props.baseAppState.contract);
     }
 
     handleChange = (event)=>{
@@ -115,14 +120,24 @@ class MarketPlaceSell extends Component {
         
     };
 
-
     resetFileSelection = ()=>{
         this.setState({buffer: null});
         this.setState({file: null});
     }
 
+    onFetchMyArtItems = event =>{
+        event.preventDefault();
+        this.fetchMyArtItems();
+        event.stopPropagation();
+    }
+
     fetchMyArtItems = () =>{
         console.log("fetch my art items method");
+        this.setState(prevState => ({
+            loading: {
+                ...prevState.loading,
+                fetchMyArtItems: true
+        }}));
         const contract = this.state.contract;
         if(!this.state.accounts) return;
         const account = this.state.accounts[0];        
@@ -145,27 +160,54 @@ class MarketPlaceSell extends Component {
                     let created = event.returnValues[4];
                     let expiry = event.returnValues[5];
 
+                    //check for existing bids on item, and update price with current highest bid on the item
+                    //address indexed bidder, uint indexed artItemId, uint bid, address indexed highestBidder, uint highestBid, uint highestBindingBid);  
+                    contract.getPastEvents('LogBid', {
+                        filter: {artItemId: itemId},  
+                        fromBlock: 0,
+                        toBlock: 'latest'
+                    }, (error, events) => {       
+                        if (!error){
+                            console.log('events', events); 
+
+                            //pick the last bid on item
+                            let lastBid = events[events.length - 1];
+                            if(lastBid){
+                                let lastBidCurrentHighestBid = lastBid.returnValues[4];
+                                if(lastBidCurrentHighestBid){
+                                    price = lastBidCurrentHighestBid;
+                                }
+                            }
+                        }}
+                    );
+
                     // check auction status
                     let response = this.getArtItem(itemId);
                     response.then(result =>{
                         console.log('get art ',result);
                         if(result){
-                            let isCancelled = result[6];                            
+                            let isCancelled = result[6];     
+                            console.log('item cancel status: '+name, isCancelled);                       
                             if(!isCancelled){
                                 oldMyAuctionedItems.push({itemId: itemId, name: name, owner: seller, price: price, created: created, expiry: expiry});
                             }
-                        }
+                        }   
+                        this.setState({myAuctionedItems: oldMyAuctionedItems}, console.log('myAuctionedItems: ', this.state.myAuctionedItems));
+
                     }).catch(error=>{
                         console.log('get art item for fetchMyArtItems error', error);
-                    });
-                    
-                });
-                this.setState({myAuctionedItems: oldMyAuctionedItems});
+                    });                         
+                });                
             }
             else {
                 console.log(error)
             }
-        })       
+            this.setState(prevState => ({
+                loading: {
+                    ...prevState.loading,
+                    fetchMyArtItems: false
+            }}));
+        });
     }
 
     addArtItem(){
@@ -200,7 +242,7 @@ class MarketPlaceSell extends Component {
             console.log('add art: ', result);
             if(result.status && result.events.LogAddItem){
                 let oldMyAuctionedItems = this.state.myAuctionedItems;
-                oldMyAuctionedItems.push({name: name, ipfs: this.state.ipfsHash, price: price, increment: increment, created: util.GetUNIXTimeFromDate(Date.now()), expiry: duration})
+                oldMyAuctionedItems.push({name: name, ipfs: this.state.ipfsHash, price: price, increment: increment, created: util.GetUNIXTimeFromDate(Date.now()), expiry: duration});
                 this.setState({myAuctionedItems: oldMyAuctionedItems});
                 this.setState(prevState => ({
                     success: {
@@ -452,10 +494,10 @@ class MarketPlaceSell extends Component {
         let hashHelper = new HashHelper();
         event.stopPropagation();
         // console.log('open art item');
-        // console.log(itemId, ipfsHash, name);
+        console.log('open art details', ipfsHash, name);
 
         if(ipfsHash && name){// just added art
-            console.log('new added art');
+            console.log('open new added art');
             console.log(ipfsHash, name);
             let ref = hashHelper.getIpfsHashFromBytes32(ipfsHash);
             this.setState({artToView: {ipfsHash: ref, name: name}}, this.setState({showFileLightBox: true}));
@@ -480,7 +522,8 @@ class MarketPlaceSell extends Component {
                         
     }
 
-    cancelAuction =(itemId)=>{
+    cancelAuction =(itemId) => event=>{
+        event.preventDefault();
         let contract = this.state.contract;
         if(typeof contract === 'string' && typeof contract !== 'object' && typeof contract !== null){
             contract = JSON.parse(contract);
@@ -523,6 +566,7 @@ class MarketPlaceSell extends Component {
                     cancelAuction: error.message
             }})); 
         });
+        event.stopPropagation();
     }
 
     render() {
@@ -536,7 +580,7 @@ class MarketPlaceSell extends Component {
                     }
                 <MDBContainer className="page-container">                
                 <MDBRow>
-                    <MDBCol md={3}>
+                    <MDBCol md="3">
                         <div className={`drop-file ${this.state.file ? "file-loaded" : ""}`}>
                             <MDBAnimation type="bounce-in">                                
                                 <Dropzone onDrop={acceptedFiles => this.setState({file: acceptedFiles[0]}, this.getFileBuffer)}>
@@ -554,7 +598,7 @@ class MarketPlaceSell extends Component {
                             </MDBAnimation>                     
                         </div>
                     </MDBCol>
-                    <MDBCol md={6} className="px-4">
+                    <MDBCol md='6' className="px-4">
                         <form>
                             <h1>Marketplace Sell</h1>
                             <hr />
@@ -572,13 +616,13 @@ class MarketPlaceSell extends Component {
                                 {this.state.success.cancelAuction ? 
                                 <ArtAlert onCloseCallback={this.resetMessage} type="success" message={this.state.success.cancelAuction} />                                        
                                 :null}  
-                                <MDBCol md={6}>
+                                <MDBCol md='6'>
                                     <label htmlFor="name" className="grey-text mt-2">
                                         Name
                                     </label>
                                     <input type="text" value={this.state.name} onChange={this.handleChange} id="name" name="name" className="form-control" />
                                 </MDBCol>                          
-                                <MDBCol md={6}>
+                                <MDBCol md='6'>
                                     <label htmlFor="minPrice" className="grey-text mt-2">
                                         Minimum Price
                                     </label>
@@ -587,13 +631,13 @@ class MarketPlaceSell extends Component {
                                 
                             </MDBRow>
                             <MDBRow>
-                                <MDBCol md={6}>
+                                <MDBCol md='6'>
                                     <label htmlFor="increment" className="grey-text mt-2">
                                         Increment (1-100)
                                     </label>
                                     <input type="number" value={this.state.increment} min={0} onChange={this.handleChange} id="increment" name="increment" className="form-control" />
                                 </MDBCol>
-                                <MDBCol md={6}>
+                                <MDBCol md='6'>
                                     <label htmlFor="duration" className="grey-text mt-2">
                                         Auction Duration (in hours:: 1-168)
                                     </label>
@@ -607,23 +651,32 @@ class MarketPlaceSell extends Component {
                             </MDBRow>
                         </form>
                     </MDBCol>
-                    <MDBCol md={3} style={{marginTop: '0px'}}>
+                    <MDBCol md='3' style={{marginTop: '0px'}}>
                         <h4>My Auctioned Arts</h4>
                         <hr />
                         <div className="art-side-bar-wrapper pr-2">
-                            {this.state.myAuctionedItems.length > 0 ?
+                            {this.state.myAuctionedItems && this.state.myAuctionedItems.length > 0 ?
                                 this.state.myAuctionedItems.map((item, index) => {
-                                    return (<span onClick={this.openArt(item.itemId, item.ipfsHash, item.name)}>
-                                    <ArtListItem
-                                        key={index}
-                                        artTitle={item.name} 
-                                        currentHighestBid={item.price} 
-                                        timeLeft={timeAgo.format(util.GetDateFromUNIXTime(Number(item.created) + Number(item.expiry)), 'twitter')} 
-                                        onCancelCallback={this.cancelAuction(item.itemId)}                                        
-                                    />
-                                    </span>);
+                                    return (
+                                        <>
+                                            <span className="cancel-auction-btn" onClick={this.cancelAuction(item.itemId)}>CANCEL</span>
+                                            <span onClick={this.openArt(item.itemId, item.ipfs, item.name)}>
+                                                <ArtListItem
+                                                    key={index}
+                                                    artTitle={item.name} 
+                                                    currentHighestBid={item.price} 
+                                                    timeLeft={timeAgo.format(util.GetDateFromUNIXTime(Number(item.created) + Number(item.expiry)), 'twitter')} 
+                                                    // onCancelCallback={this.cancelAuction(item.itemId)}                                        
+                                                />
+                                            </span>
+                                        </>
+                                    )
                                 })
-                            : <h6>You currently have no auctioned items</h6>}
+                            : 
+                            <>
+                                <h6>You currently have no auctioned items</h6>
+                                <MDBBtn onClick={this.onFetchMyArtItems} block color="info" >{this.state.loading.fetchMyArtItems ? <Spinner size="small"/> : <span>Manually Fetch Art Items</span> }</MDBBtn>
+                            </>}
                         </div>
                     </MDBCol>
                 </MDBRow>               

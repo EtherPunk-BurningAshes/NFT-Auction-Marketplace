@@ -14,6 +14,7 @@ class MarketPlaceBuy extends Component {
             _isMount: false,
             accounts: this.props.baseAppState.accounts,
             contract: this.props.baseAppState.contract,
+            priceContract: this.props.baseAppState.priceFeed,
             price: 0,
             bidAmount: 0,
             artHash: [],
@@ -103,13 +104,21 @@ class MarketPlaceBuy extends Component {
         if ( !contract ) {
             let util = new HelperFunctions();
             let response = await util.reloadContractAndAccounts();
-            this.setState({ web3: response.web3, accounts: response.accounts, contract: response.contract });
+            this.setState({ web3: response.web3, accounts: response.accounts, contract: response.contract, priceContract: response.priceFeed });
         }
     }
 
     componentDidMount(){
         this.setState({_isMount: true});    
         // this.backgroundDataSync();
+    }
+
+    componentDidUpdate(){
+        setInterval(()=>{
+            if(!this.state.contract){
+                window.location.href='/marketplace/buy';
+            }
+        }, 5000); 
     }
 
     backgroundDataSync =()=>{ //sync every 20 seconds
@@ -537,7 +546,7 @@ class MarketPlaceBuy extends Component {
                                                 id="currentHighestBid" 
                                                 name="currentHighestBid" className="form-control" />
 
-                                    {this.state.newBid.isCancelled ? 
+                                    {!this.state.newBid.isCancelled ? 
                                     <>
                                         <label htmlFor="bidAmount" className="grey-text mt-2 small text-uppercase">
                                             Bid Amount

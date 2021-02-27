@@ -11,7 +11,7 @@ const getWeb3 = () =>
         //use saved preferences
         if(localStorage.getItem('setWallet') === 'portis'){
           try{
-            const portis = new Portis('28d6577c-2916-43bc-b4c5-f5dd87b9b62e', 'maticMumbai');
+            const portis = new Portis(process.env.REACT_APP_PORTIS_APP_ID, process.env.REACT_APP_PORTIS_TESTNET_NETWORK);
             const web3 = new Web3(portis.provider);
             console.log("saved portis wallet preference fetched", web3);
             resolve(web3);
@@ -32,7 +32,7 @@ const getWeb3 = () =>
           if(window.confirm('Press OK to use your Portis wallet. Press CANCEL to use Metamask or any other available wallet')){
             //USE PORTIS
             try{
-              const portis = new Portis('28d6577c-2916-43bc-b4c5-f5dd87b9b62e', 'maticMumbai');
+              const portis = new Portis(process.env.REACT_APP_PORTIS_APP_ID, process.env.REACT_APP_PORTIS_TESTNET_NETWORK);
               const web3 = new Web3(portis.provider);
               console.log("new portis wallet preference saved", web3);
               localStorage.setItem('setWallet','portis');

@@ -4,6 +4,7 @@
   "description": "An Ethereum Marketplace",
   "author": "sachinmatta08@gmail.co,",
   "dependencies": {
+    "@biconomy/mexa": "^2.0.4",
     "@fortawesome/fontawesome-free": "^5.15.2",
     "@openzeppelin/contracts": "^3.3.0",
     "@portis/web3": "^3.0.8",
@@ -20,6 +21,7 @@
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
     "chai-bignumber": "3.0.0",
+    "dot-env": "0.0.1",
     "i": "^0.3.6",
     "ipfs-http-client": "^49.0.2",
     "javascript-time-ago": "^2.3.4",

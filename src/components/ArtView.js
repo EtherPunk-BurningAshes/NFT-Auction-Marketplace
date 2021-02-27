@@ -35,7 +35,8 @@ class ArtView extends Component {
                             {console.log(this.props.artName, this.state.mediaFileURL)}
                             <DocViewer
                                 pluginRenderers={DocViewerRenderers}                                 
-                                documents={[{uri: this.state.mediaFileURL}]} />
+                                documents={[{uri: this.state.mediaFileURL}]}
+                                />
                             
                         </div>
                     </div>}                    

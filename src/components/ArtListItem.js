@@ -6,7 +6,12 @@ import Time from 'react-time-format';
 
 import '../styles/artlistitem.scss';
 
+
 const ArtListItem = (props) => {
+    const onCancelClick = ()=>{
+        props.onCancelCallback();
+    }
+
     return (
         <MDBView hover waves>
             <MDBCard className="art-list-item-wrapper">
@@ -15,7 +20,6 @@ const ArtListItem = (props) => {
                         <MDBIcon far icon="file-image" size="3x" style={{color: 'rgba(130,130,130,1)'}}/>
                     </MDBCol>
                     <MDBCol size="10">
-                        <span className="cancel-auction-btn" onClick={()=>props.onCancelCallback()}>CANCEL AUCTION</span>
                         <MDBTypography tag='h6' variant="h6-responsive">{props.artTitle}</MDBTypography>
                         {props.time ? 
                             // <ReactTimeAgo date={props.time} locale="en-US" timeStyle="twitter"/>

@@ -10,24 +10,23 @@ export default class HelperFunctions {
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
-      const myContractAddress = '0xc0308488eCbecC7630bDb871D589bED9a7122268';
-
-      const priceFeedContractAddr = '0xba3201dFAAc91620A6fDB8A13cc7e68368EC4160';
+      const myContractAddress = process.env.REACT_APP_AUCTION_CONTRACT_ADDRESS;
+      const priceFeedContractAddr = process.env.REACT_APP_PRICE_FEED_ADDRESS;
 
       // Get the contract instance.
-      const instance = new web3.eth.Contract(ArtAuction.abi,
-        myContractAddress);
+      // const instance = new web3.eth.Contract(ArtAuction.abi,
+      //   myContractAddress);
 
       const priceFeedInstance = new web3.eth.Contract(PriceConsumerV3.abi,
         priceFeedContractAddr);
 
       //for local development
-      // const networkId = await web3.eth.net.getId();
-      // const deployedNetwork = ArtAuction.networks[networkId];
-      // const instance = new web3.eth.Contract(
-      //   ArtAuction.abi,
-      //   deployedNetwork && deployedNetwork.address,
-      // );
+      const networkId = await web3.eth.net.getId();
+      const deployedNetwork = ArtAuction.networks[networkId];
+      const instance = new web3.eth.Contract(
+        ArtAuction.abi,
+        deployedNetwork && deployedNetwork.address,
+      );
 
 
       // Set web3, accounts, and contract to the state, and then proceed with an

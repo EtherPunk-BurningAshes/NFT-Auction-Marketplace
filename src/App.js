@@ -45,21 +45,21 @@ class App extends Component {
       const priceFeedContractAddr = '0xba3201dFAAc91620A6fDB8A13cc7e68368EC4160';
 
       // Get the contract instance.
-      const instance = new web3.eth.Contract(ArtAuction.abi,
-        myContractAddress);
-        console.log('instance', instance);
+      // const instance = new web3.eth.Contract(ArtAuction.abi,
+      //   myContractAddress);
+      //   console.log('instance', instance);
 
       const priceFeedInstance = new web3.eth.Contract(PriceConsumerV3.abi,
         priceFeedContractAddr);
         console.log('priceFeedInstance', priceFeedInstance);
 
       //for local development
-      // const networkId = await web3.eth.net.getId();
-      // const deployedNetwork = ArtAuction.networks[networkId];
-      // const instance = new web3.eth.Contract(
-      //   ArtAuction.abi,
-      //   deployedNetwork && deployedNetwork.address,
-      // );
+      const networkId = await web3.eth.net.getId();
+      const deployedNetwork = ArtAuction.networks[networkId];
+      const instance = new web3.eth.Contract(
+        ArtAuction.abi,
+        deployedNetwork && deployedNetwork.address,
+      );
 
 
       // Set web3, accounts, and contract to the state, and then proceed with an
@@ -76,29 +76,7 @@ class App extends Component {
       console.error(error);
     }    
   };
-
-  /*userSignin = () =>{
-    // sign user in
-    const { accounts, contract } = this.state;
-    let user = contract.methods.getUser().call({from: accounts[0]});
-    user.then(response => {
-      //authentication is successful
-      console.log('user: ',response);
-
-      if(response && response[0] == true){
-        this.setState({isAuthenticated: true});
-        localStorage.setItem('isAuthenticated', true);
-        
-        this.setState({pageLoading: false});
-      }
-    }).catch(error=>{
-      this.setState({isAuthenticated: false});
-      localStorage.setItem('isAuthenticated', false);
-      this.setState({pageLoading: false});
-    })   
-    
-  }*/
-
+  
   render(){
     return (
       <div className="App">
