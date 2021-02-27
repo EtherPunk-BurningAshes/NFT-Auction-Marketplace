@@ -1,5 +1,4 @@
 pragma solidity ^0.6.3;
-
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/8108f2f9b917616a8cd0661c31a211ad9f988110/contracts/token/ERC721/ERC721.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/8108f2f9b917616a8cd0661c31a211ad9f988110/contracts/math/SafeMath.sol";
 
@@ -127,22 +126,22 @@ contract ArtAuction is ERC721 {
     if((artItem.time + (artItem.timePeriod * 1 seconds) < now))  //mint token if auctionstarted
     {
     bidding storage bid = bid[id];
-    _tokenIds++;
-    //token[_tokenIds] = _artItemIds;
-    _safeMint(bid.highestBidder, _tokenIds);
-    _setTokenURI(_tokenIds, artItem.tokenURI);
+   
     artItem.cancelled=true;
      // the auction's owner should be allowed to withdraw the highestBindingBid
    
-    if (bid.highestBindingBid == 0) revert();
+    if (bid.highestBindingBid != 0 && artItem.auctionstarted==true)
+    {
+     _tokenIds++;
+    //token[_tokenIds] = _artItemIds;    
+    _safeMint(bid.highestBidder, _tokenIds);
+    _setTokenURI(_tokenIds, artItem.tokenURI);
     fundsByBidder[id][bid.highestBidder] -= bid.highestBindingBid;
     // send the funds
-    if (!msg.sender.send(bid.highestBindingBid)) revert();
-    LogCanceled(id,msg.sender,bid.highestBidder);
-        }
-       
-   
-    
+    (artItem.seller).send(bid.highestBindingBid); 
+    }
+    LogCanceled(id,artItem.seller,bid.highestBidder);
+    }
     return artItem.cancelled;    
    }
    
