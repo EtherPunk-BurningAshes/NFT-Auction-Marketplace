@@ -19,6 +19,8 @@ The auction takes place where the seller can start it with
 1) ``price``: The minimum price or starting price of the auction 
 2) ``_bidincrement``: The incremental value is the fixed constant increment that happens to the value. It prevents bots from bidding with a small amount as well as incentivizes the bidder with the best deal.
 3) ``tokenURI``: It is the IPFS hash(CID) generated after uploading files to IPFS
+4) ``timeperiod``: Minimum Time period after which auction can end
+5) ``name``: Name of the Art
 
 There are two kinds of token IDS:
 1) ``_tokenIds`` Unique Image ID that are tokenized
@@ -59,7 +61,7 @@ If a person called Sanchita bids 12Eth, Sachin's highest bid of 13Eth will autom
 Scenarios of Bidder over-bidding his own bid, other bidders under-bidding the Highestbid or the highestBindingBid are covered.
 
 ``Widthraw()``:
-There is a seperate widhraw function that follows the withdrawal design pattern to prevent re-entrenacy attacks. Each user withdraws his or her own funds. 
+There is a seperate widhraw function that follows the withdrawal design pattern to prevent re-entrenacy attacks. Each user withdraws his or her own funds.  
 
 There is no owner of the contract, and anyone can put his/her art for sale and tokenize it or buy it. If at any point the frontend application is censored down, the contract is untouched as it is stored on-chain along with IPFS hash.
 
