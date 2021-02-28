@@ -110,7 +110,11 @@ class MarketPlaceBuy extends Component {
 
     componentDidMount(){
         this.setState({_isMount: true});    
-        // this.backgroundDataSync();
+        // setInterval(()=>{
+        //     if(this.state.contract && this.state.artItems.length < 1){
+        //         window.location.href='/marketplace/buy';
+        //     }            
+        // }, 5000); 
     }
 
     componentDidUpdate(){
@@ -453,7 +457,7 @@ class MarketPlaceBuy extends Component {
         response.then(result => {
             console.log('withdraw bid: ', result);
             if(result.status && result.events.LogWithdrawal){
-                let amount = event[0].returnValues[2];
+                let amount = result.events.LogWithdrawal.returnValues[2];
                 this.setState(prevState => ({
                     success: {
                         ...prevState.success,
