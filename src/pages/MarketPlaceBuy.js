@@ -1,4 +1,4 @@
-import { MDBAnimation, MDBBtn, MDBCard, MDBCol, MDBContainer, MDBRow } from 'mdbreact';
+import { MDBAnimation, MDBBtn, MDBCard, MDBCol, MDBContainer, MDBIcon, MDBRow } from 'mdbreact';
 import React, { Component } from 'react';
 import ArtTable from '../components/ArtTable';
 import ArtListItem from '../components/ArtListItem';
@@ -28,7 +28,8 @@ class MarketPlaceBuy extends Component {
                 expiringItems: false,
                 items: false,
                 placeBidBtn: false,
-                withdrawBtn: false
+                withdrawBtn: false,
+                fetchArtItems: false
             },
             columns: [
                 {
@@ -82,6 +83,7 @@ class MarketPlaceBuy extends Component {
         this.placeBid = this.placeBid.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.selectBid = this.selectBid.bind(this);
+        this.onFetchArtItems = this.onFetchArtItems.bind(this);
 
         this.fetchMyBids();
         this.fetchArtItems();        
@@ -112,17 +114,18 @@ class MarketPlaceBuy extends Component {
         this.setState({_isMount: true});    
         // setInterval(()=>{
         //     if(this.state.contract && this.state.artItems.length < 1){
-        //         window.location.href='/marketplace/buy';
+        //         this.fetchArtItems();
+        //         //window.location.href='/marketplace/buy';
         //     }            
-        // }, 5000); 
+        // }, 10000); 
     }
 
     componentDidUpdate(){
-        setInterval(()=>{
-            if(!this.state.contract){
-                window.location.href='/marketplace/buy';
-            }
-        }, 5000); 
+        // setInterval(()=>{
+        //     if(!this.state.contract){
+        //         window.location.href='/marketplace/buy';
+        //     }
+        // }, 5000); 
     }
 
     backgroundDataSync =()=>{ //sync every 20 seconds
@@ -342,6 +345,11 @@ class MarketPlaceBuy extends Component {
     fetchArtItems = () =>{
         // if(!this.state._isMount) return;
         const timeAgo = new TimeAgo('en-US');
+        this.setState(prevState => ({
+            loading: {
+                ...prevState.loading,
+                fetchArtItems: true
+        }}));
 
         console.log("fetch art items method");
         const contract = this.state.contract;
@@ -400,8 +408,8 @@ class MarketPlaceBuy extends Component {
                             //check if auction is closed already                            
                             let response = this.getArtItem(itemId);
                             response.then(result =>{
-                                console.log('get art ',result);
-                                if(result){
+                                console.log('get art - fetch my arts ',result);
+                                // if(result){
                                     let isCancelled = result[6];   
 
                                     let specialStatus = null; 
@@ -417,7 +425,7 @@ class MarketPlaceBuy extends Component {
                                             itemId: itemId, 
                                             name: name, 
                                             owner: util.GetMaskedAccount(seller), 
-                                            price: price, 
+                                            price: new Intl.NumberFormat().format(price), 
                                             created: createdDate, 
                                             expiry: expiryDate,
                                             join: <section>{ specialStatus ?  specialStatus
@@ -430,16 +438,20 @@ class MarketPlaceBuy extends Component {
                                             // break; limit fetched items
                                         }
                                         this.setState({latestFetchBlock: event.blockNumber});
+                                        this.setState({artItems: oldArtItems});
                                     // }
-                                }
+                                // }
                             }).catch(error=>{
                                 console.log('get art item for fetchMyArtItems error', error);
                             });                            
                         }
-                    });
-                }
-                
-                this.setState({artItems: oldArtItems});
+                    });                    
+                }       
+                this.setState(prevState => ({
+                    loading: {
+                        ...prevState.loading,
+                        fetchArtItems: false
+                }}));                         
             }
             else {
                 console.log(error)
@@ -483,6 +495,12 @@ class MarketPlaceBuy extends Component {
         }); 
     }
 
+    onFetchArtItems =event=>{
+        event.preventDefault();
+        this.fetchArtItems();
+        event.stopPropagation();
+    }
+
     render() {
         let util = new HelperFunctions();
         return (
@@ -494,7 +512,11 @@ class MarketPlaceBuy extends Component {
                                 <h1>Buy an Art (NFT)</h1>
                                 <MDBCol className="p-2 mt-4">
                                     <MDBAnimation type="">
+                                        <section>
+                                            <MDBBtn rounded style={{position:'absolute', right:'10px', top:'-45px'}} onClick={this.onFetchArtItems} color="info" >{this.state.loading.fetchArtItems ? <Spinner style={{position: 'relative', left: '-15px'}} size="small"/> : <span>Reload <MDBIcon className="ml-2" icon="sync-alt" /></span> }</MDBBtn>
+                                        </section>
                                         <ArtTable rows={this.state.artItems} columns={this.state.columns}/>
+                                        
                                     </MDBAnimation>
                                 </MDBCol>  
                             </MDBCard>                                                              

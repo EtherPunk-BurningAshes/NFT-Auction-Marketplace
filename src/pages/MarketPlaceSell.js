@@ -27,6 +27,8 @@ class MarketPlaceSell extends Component {
             buffer: null,
             price: 0,
             increment: 0,
+            ONE_MATIC: 0, //USD
+            PRICE_TO_USD: 0, //USD
             name: '',
             duration: 0,
             artToView: {},
@@ -76,6 +78,7 @@ class MarketPlaceSell extends Component {
             let response = await util.reloadContractAndAccounts();
             this.setState({ web3: response.web3, accounts: response.accounts, contract: response.contract, priceContract: response.priceFeed });
         }
+        this.getMaticPriceFeed();
     }
 
     componentDidUpdate(){
@@ -97,6 +100,11 @@ class MarketPlaceSell extends Component {
         let key = event.target.name;
         let value = event.target.value;
         this.setState({[key]: value});
+
+        if(key === 'price'){
+            let USDprice = value * this.state.ONE_MATIC;
+            this.setState({PRICE_TO_USD: USDprice});
+        }
     }
 
     getFileBuffer = () =>{
@@ -129,6 +137,23 @@ class MarketPlaceSell extends Component {
         event.preventDefault();
         this.fetchMyArtItems();
         event.stopPropagation();
+    }
+
+    getMaticPriceFeed = () =>{
+        // 1MATIC = 0.1949 USD (28-02-2021 2:28pm)       
+
+        //TEST NET
+        const contract = this.state.priceContract;
+        if(!this.state.accounts) return;
+        const account = this.state.accounts[0];    
+
+        contract.methods.getLatestPrice().call({from: account})
+        .then(result=>{
+            this.setState({ONE_MATIC: (result/100000000).toFixed(8)}, 
+                console.log('price feed response', this.state.ONE_MATIC));
+        }).catch(error => {
+            console.log('getmaticPriceFeed error', error);
+        });
     }
 
     fetchMyArtItems = () =>{
@@ -624,8 +649,9 @@ class MarketPlaceSell extends Component {
                                 </MDBCol>                          
                                 <MDBCol md='6'>
                                     <label htmlFor="minPrice" className="grey-text mt-2">
-                                        Minimum Price
+                                        Min. Price (MATIC)
                                     </label>
+                                    <span className="usd-price"> ~ {new Intl.NumberFormat().format(this.state.PRICE_TO_USD.toFixed(2))} USD</span>
                                     <input type="number" value={this.state.price} min={0} onChange={this.handleChange} id="minPrice" name="price" className="form-control" />
                                 </MDBCol>
                                 
@@ -639,7 +665,7 @@ class MarketPlaceSell extends Component {
                                 </MDBCol>
                                 <MDBCol md='6'>
                                     <label htmlFor="duration" className="grey-text mt-2">
-                                        Auction Duration (in hours:: 1-168)
+                                        Auction Duration (in hours:: 0-168)
                                     </label>
                                     <input type="number" value={this.state.duration} min={0} onChange={this.handleChange} id="duration" name="duration" className="form-control" />
                                 </MDBCol>

@@ -13,20 +13,20 @@ export default class HelperFunctions {
       const myContractAddress = process.env.REACT_APP_AUCTION_CONTRACT_ADDRESS;
       const priceFeedContractAddr = process.env.REACT_APP_PRICE_FEED_ADDRESS;
 
-      // Get the contract instance.
-      // const instance = new web3.eth.Contract(ArtAuction.abi,
-      //   myContractAddress);
+      // Get the contract instance on TEST NET
+      const instance = new web3.eth.Contract(ArtAuction.abi,
+        myContractAddress);
 
       const priceFeedInstance = new web3.eth.Contract(PriceConsumerV3.abi,
         priceFeedContractAddr);
 
       //for local development
-      const networkId = await web3.eth.net.getId();
-      const deployedNetwork = ArtAuction.networks[networkId];
-      const instance = new web3.eth.Contract(
-        ArtAuction.abi,
-        deployedNetwork && deployedNetwork.address,
-      );
+      // const networkId = await web3.eth.net.getId();
+      // const deployedNetwork = ArtAuction.networks[networkId];
+      // const instance = new web3.eth.Contract(
+      //   ArtAuction.abi,
+      //   deployedNetwork && deployedNetwork.address,
+      // );
 
 
       // Set web3, accounts, and contract to the state, and then proceed with an

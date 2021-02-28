@@ -12,7 +12,9 @@ import NotFound from './pages/NotFound';
 import { Component } from 'react';
 import getWeb3 from "./getWeb3";
 import ArtAuction from "./abis/ArtAuction.json";
-const PriceConsumerV3 = require('./abis/PriceConsumerV3.json');
+import PriceConsumerV3 from './abis/PriceConsumerV3.json';
+
+require('dotenv').config();
 
 class App extends Component {
 
@@ -40,26 +42,26 @@ class App extends Component {
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
-      const myContractAddress = '0xc0308488eCbecC7630bDb871D589bED9a7122268';
+      const myContractAddress = '0xC66A8d61cC39F774A28c429e26e9B04Ba05010CB';
 
       const priceFeedContractAddr = '0xba3201dFAAc91620A6fDB8A13cc7e68368EC4160';
 
       // Get the contract instance.
-      // const instance = new web3.eth.Contract(ArtAuction.abi,
-      //   myContractAddress);
-      //   console.log('instance', instance);
+      const instance = new web3.eth.Contract(ArtAuction.abi,
+        myContractAddress);
+        console.log('instance', instance);
 
       const priceFeedInstance = new web3.eth.Contract(PriceConsumerV3.abi,
         priceFeedContractAddr);
         console.log('priceFeedInstance', priceFeedInstance);
 
       //for local development
-      const networkId = await web3.eth.net.getId();
-      const deployedNetwork = ArtAuction.networks[networkId];
-      const instance = new web3.eth.Contract(
-        ArtAuction.abi,
-        deployedNetwork && deployedNetwork.address,
-      );
+      // const networkId = await web3.eth.net.getId();
+      // const deployedNetwork = ArtAuction.networks[networkId];
+      // const instance = new web3.eth.Contract(
+      //   ArtAuction.abi,
+      //   deployedNetwork && deployedNetwork.address,
+      // );
 
 
       // Set web3, accounts, and contract to the state, and then proceed with an
@@ -76,7 +78,7 @@ class App extends Component {
       console.error(error);
     }    
   };
-  
+
   render(){
     return (
       <div className="App">

@@ -30,7 +30,7 @@ const ArtListItem = (props) => {
                                 <MDBIcon far icon="clock" /> {props.timeLeft}
                             </MDBCol>
                             <MDBCol size="7">
-                                <MDBIcon icon="coins" /> {props.currentHighestBid}
+                                <MDBIcon icon="coins" /> {new Intl.NumberFormat().format(props.currentHighestBid)}
                             </MDBCol>
                         </MDBRow>
                     </MDBCol>

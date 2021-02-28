@@ -147,7 +147,7 @@ contract ArtAuction is ERC721 {
         ArtItem storage artItem = _artItems[id];  
         require(artItem.cancelled == false);
 
-        // if((artItem.time + (artItem.timePeriod * 1 seconds) < now)){  //mint token if auctionstarted and not expired
+        if((artItem.time + (artItem.timePeriod * 1 seconds) < now)){  //mint token if auctionstarted and not expired
             bidding storage bid = bid[id];
             artItem.cancelled = true;
             // the auction's owner should be allowed to withdraw the highestBindingBid
@@ -164,7 +164,7 @@ contract ArtAuction is ERC721 {
             }
 
             LogCanceled(id,artItem.seller,bid.highestBidder);
-        // }
+        }
         return artItem.cancelled;   
     }
    

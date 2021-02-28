@@ -5,3 +5,13 @@
 .page-container{
   padding-top: 30px;
 }
+.usd-price{
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  background-color: rgb(245, 131, 0);
+}
